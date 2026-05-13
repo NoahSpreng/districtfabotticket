@@ -1,0 +1,51 @@
+{
+  "ticketCategoryId": "ID_CATEGORIE_PAR_DEFAUT",
+  "archiveCategoryId": "",
+  "status": "DISTRICT FA",
+  "defaultCategory": "support",
+  "autoCloseHours": 0,
+  "limits": {
+    "maxOpenTicketsPerUser": 1
+  },
+  "panel": {
+    "title": "🎫 Ouvrir un ticket",
+    "description": "Choisis le type de demande dans le menu ci-dessous. Le bon staff sera ping automatiquement dans ton salon prive.",
+    "color": "#5865F2",
+    "image": "",
+    "thumbnail": "",
+    "footer": "DISTRICT FA - Tickets",
+    "author": "",
+    "selectPlaceholder": "Selectionne ton type de ticket..."
+  },
+  "categories": {
+    "support": {
+      "label": "Support",
+      "description": "Aide generale, questions et problemes",
+      "emoji": "🎫",
+      "ticketCategoryId": "ID_CATEGORIE_SUPPORT",
+      "welcomeMessage": "Bienvenue dans ton ticket support. Explique ton probleme clairement.",
+      "questions": [
+        {
+          "id": "request",
+          "label": "Explique ton probleme"
+        }
+      ],
+      "roleIds": ["ID_ROLE_SUPPORT"]
+    },
+    "legal": {
+      "label": "Legal",
+      "description": "Dossiers et demandes legal",
+      "emoji": "⚖️",
+      "ticketCategoryId": "ID_CATEGORIE_LEGAL",
+      "roleIds": ["ID_ROLE_LEGAL"]
+    },
+    "responsable": {
+      "label": "Responsable",
+      "description": "Escalade vers les responsables",
+      "emoji": "⭐",
+      "ticketCategoryId": "ID_CATEGORIE_RESPONSABLE",
+      "staffOnly": true,
+      "roleIds": ["ID_ROLE_RESPONSABLE"]
+    }
+  }
+}

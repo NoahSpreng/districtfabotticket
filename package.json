@@ -1,0 +1,16 @@
+{
+  "name": "district-fa-ticket-bot",
+  "version": "1.0.0",
+  "description": "Bot Discord de tickets avec panel, selecteur et actions staff pour DISTRICT FA.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  }
+}

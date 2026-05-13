@@ -1,0 +1,160 @@
+{
+  "tickets": [
+    {
+      "id": "eab10002-ac9c-479f-b258-e8d6b61f594b",
+      "userId": "886223974718124062",
+      "channelId": "1504130318691471493",
+      "category": "illegal",
+      "claimedBy": null,
+      "status": "closed",
+      "createdAt": "2026-05-13T14:36:53.135Z",
+      "closedBy": "886223974718124062",
+      "closedAt": "2026-05-13T14:41:23.585Z"
+    },
+    {
+      "id": "523a729e-71fa-4a19-a4d1-54c6685a82a5",
+      "userId": "886223974718124062",
+      "channelId": "1504131725519884309",
+      "category": "direction",
+      "claimedBy": "886223974718124062",
+      "status": "closed",
+      "createdAt": "2026-05-13T14:42:28.558Z",
+      "closedBy": "886223974718124062",
+      "closedAt": "2026-05-13T14:48:19.779Z"
+    },
+    {
+      "id": "54bb312a-e9d1-40d3-9daa-186be1e54a51",
+      "userId": "886223974718124062",
+      "channelId": "1504133519557918854",
+      "number": 1,
+      "category": "illegal",
+      "claimedBy": "886223974718124062",
+      "status": "closed",
+      "createdAt": "2026-05-13T14:49:36.350Z",
+      "closedAt": "2026-05-13T14:55:00.000Z",
+      "closeReason": "channel_deleted"
+    },
+    {
+      "id": "14f51afe-641c-46a8-8cc1-409f4756a2cb",
+      "userId": "886223974718124062",
+      "channelId": "1504139797189496872",
+      "number": 2,
+      "category": "recrutement",
+      "claimedBy": "886223974718124062",
+      "status": "closed",
+      "createdAt": "2026-05-13T15:14:33.087Z",
+      "closedBy": "886223974718124062",
+      "closedAt": "2026-05-13T15:15:04.258Z"
+    },
+    {
+      "id": "58890a94-a166-4840-83d7-746cbe8023d5",
+      "userId": "886223974718124062",
+      "channelId": "1504140233153974345",
+      "number": 3,
+      "category": "illegal",
+      "claimedBy": null,
+      "status": "closed",
+      "createdAt": "2026-05-13T15:16:17.087Z",
+      "closedBy": "886223974718124062",
+      "closedAt": "2026-05-13T15:16:33.133Z"
+    },
+    {
+      "id": "2e385bbe-c407-416d-b5ce-8943fa8e7a9a",
+      "userId": "886223974718124062",
+      "channelId": "1504144924596113478",
+      "number": 4,
+      "category": "legal",
+      "claimedBy": null,
+      "status": "closed",
+      "priority": "urgent",
+      "createdAt": "2026-05-13T15:34:55.609Z",
+      "lastActivityAt": "2026-05-13T15:34:55.609Z",
+      "answers": [
+        {
+          "id": "target",
+          "label": "Sujet / cible / contexte",
+          "value": "CVC"
+        },
+        {
+          "id": "details",
+          "label": "Details",
+          "value": "ezeaze"
+        }
+      ],
+      "archivedBy": "886223974718124062",
+      "archivedAt": "2026-05-13T15:36:02.428Z",
+      "notes": [
+        {
+          "authorId": "886223974718124062",
+          "content": "ezeae",
+          "createdAt": "2026-05-13T15:36:12.699Z"
+        }
+      ],
+      "closedBy": "886223974718124062",
+      "closedAt": "2026-05-13T15:42:02.384Z",
+      "closeReason": "ee"
+    },
+    {
+      "id": "bbc7927c-d4ce-4c98-ab9a-ac5e4051fd8f",
+      "userId": "886223974718124062",
+      "channelId": "1504146834870894743",
+      "number": 5,
+      "category": "guerre",
+      "claimedBy": "886223974718124062",
+      "status": "closed",
+      "createdAt": "2026-05-13T15:42:31.067Z",
+      "lastActivityAt": "2026-05-13T15:42:31.067Z",
+      "answers": [
+        {
+          "id": "request",
+          "label": "Explique ton probleme",
+          "value": "EEE"
+        },
+        {
+          "id": "proof",
+          "label": "Preuves / captures / contexte",
+          "value": "EZEAE"
+        }
+      ],
+      "firstResponseAt": "2026-05-13T15:43:29.161Z",
+      "notes": [
+        {
+          "authorId": "886223974718124062",
+          "content": "rez",
+          "createdAt": "2026-05-13T15:44:27.021Z"
+        }
+      ],
+      "archivedBy": "886223974718124062",
+      "archivedAt": "2026-05-13T16:14:29.844Z",
+      "closedBy": "886223974718124062",
+      "closedAt": "2026-05-13T16:35:27.105Z",
+      "closeReason": "zs"
+    },
+    {
+      "id": "7720ff9f-feb2-49ac-83f3-2ed69381b681",
+      "userId": "886223974718124062",
+      "channelId": "1504160247441391848",
+      "number": 6,
+      "category": "guerre",
+      "claimedBy": null,
+      "status": "closed",
+      "createdAt": "2026-05-13T16:35:48.873Z",
+      "lastActivityAt": "2026-05-13T16:35:48.873Z",
+      "answers": [
+        {
+          "id": "name",
+          "label": "Nom RP / disponibilites",
+          "value": "ezeazeaze"
+        },
+        {
+          "id": "motivation",
+          "label": "Motivation",
+          "value": "aezazeaze"
+        }
+      ],
+      "closedBy": "886223974718124062",
+      "closedAt": "2026-05-13T16:36:48.787Z",
+      "closeReason": "qqs"
+    }
+  ]
+}
