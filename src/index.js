@@ -244,6 +244,7 @@ async function handleTicketModal(interaction) {
 
   if (interaction.customId === "ticket_rename_modal") {
     if (!(await requireTicketStaff(interaction, ticket))) return;
+    await deferEphemeral(interaction);
     await renameTicket(interaction, ticket, interaction.fields.getTextInputValue("value"));
     return;
   }
@@ -305,8 +306,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       }
 
       if (!(await requireTicketStaff(interaction, ticket))) return;
-      await deferEphemeral(interaction);
-      await changeTicketCategory(client, interaction, ticket, interaction.values[0].replace("redirect:", ""));
+      const categoryKey = interaction.values[0].replace("redirect:", "");
+      const categoryLabel = config.categories[categoryKey]?.label ?? categoryKey;
+      await interaction.deferUpdate();
+      await interaction.editReply({
+        content: `Redirection vers **${categoryLabel}** en cours...`,
+        components: []
+      });
+      await changeTicketCategory(client, interaction, ticket, categoryKey);
       return;
     }
 

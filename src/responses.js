@@ -21,7 +21,7 @@ async function finishEphemeral(interaction, payload) {
   }
 
   if (interaction.replied) {
-    return interaction.followUp(ephemeralPayload(payload));
+    return interaction.editReply(payload).catch(() => interaction.followUp(ephemeralPayload(payload)));
   }
 
   return interaction.reply(ephemeralPayload(payload));
@@ -33,7 +33,7 @@ async function respondEphemeral(interaction, payload) {
   }
 
   if (interaction.replied) {
-    return interaction.followUp(ephemeralPayload(payload));
+    return interaction.editReply(payload).catch(() => interaction.followUp(ephemeralPayload(payload)));
   }
 
   return interaction.reply(ephemeralPayload(payload));

@@ -9,9 +9,9 @@ const {
 } = require("./utils");
 const { replyEphemeral } = require("./responses");
 
-function categoryPermissionOverwrites(client, guild, categoryKey, userId, closed = false, staffUserIds = []) {
+function categoryPermissionOverwrites(client, guild, categoryKey, userId, closed = false, staffUserIds = [], staffRoleIds = []) {
   const category = config.categories[categoryKey] ?? config.categories[config.defaultCategory];
-  const allowedRoles = new Set(category.roleIds);
+  const allowedRoles = new Set([...(category.roleIds ?? []), ...staffRoleIds]);
   const userPermissions = [
     PermissionsBitField.Flags.ViewChannel,
     PermissionsBitField.Flags.ReadMessageHistory

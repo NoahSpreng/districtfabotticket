@@ -135,8 +135,8 @@
       "userId": "886223974718124062",
       "channelId": "1504160247441391848",
       "number": 6,
-      "category": "guerre",
-      "claimedBy": null,
+      "category": "illegal",
+      "claimedBy": "886223974718124062",
       "status": "closed",
       "createdAt": "2026-05-13T16:35:48.873Z",
       "lastActivityAt": "2026-05-13T16:35:48.873Z",
@@ -153,8 +153,50 @@
         }
       ],
       "closedBy": "886223974718124062",
-      "closedAt": "2026-05-13T16:36:48.787Z",
-      "closeReason": "qqs"
+      "closedAt": "2026-05-13T16:51:26.421Z",
+      "closeReason": "fvfv",
+      "staffAccessIds": [
+        "886223974718124062"
+      ],
+      "notes": [
+        {
+          "authorId": "886223974718124062",
+          "content": "ee",
+          "createdAt": "2026-05-13T16:44:59.841Z"
+        }
+      ],
+      "reopenedBy": "886223974718124062",
+      "reopenedAt": "2026-05-13T16:45:04.440Z",
+      "firstResponseAt": "2026-05-13T16:51:20.342Z"
+    },
+    {
+      "id": "bf48357d-2bdf-4a39-afe8-f74dd0cf3afa",
+      "userId": "886223974718124062",
+      "channelId": "1504166202413551726",
+      "number": 7,
+      "category": "guerre",
+      "claimedBy": null,
+      "status": "open",
+      "createdAt": "2026-05-13T16:59:28.678Z",
+      "lastActivityAt": "2026-05-13T16:59:28.679Z",
+      "answers": [],
+      "staffAccessIds": [
+        "886223974718124062"
+      ],
+      "staffRoleAccessIds": [
+        "1499496679584567477",
+        "1499496679584567480",
+        "1499496679609466921",
+        "1499496679584567479",
+        "1499496679584567476"
+      ],
+      "notes": [
+        {
+          "authorId": "886223974718124062",
+          "content": "uhio",
+          "createdAt": "2026-05-13T17:01:37.676Z"
+        }
+      ]
     }
   ]
 }
