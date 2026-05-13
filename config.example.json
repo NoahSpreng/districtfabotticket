@@ -24,12 +24,6 @@
       "emoji": "🎫",
       "ticketCategoryId": "ID_CATEGORIE_SUPPORT",
       "welcomeMessage": "Bienvenue dans ton ticket support. Explique ton probleme clairement.",
-      "questions": [
-        {
-          "id": "request",
-          "label": "Explique ton probleme"
-        }
-      ],
       "roleIds": ["ID_ROLE_SUPPORT"]
     },
     "legal": {

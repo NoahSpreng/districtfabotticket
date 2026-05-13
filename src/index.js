@@ -23,7 +23,6 @@ const {
   closeReasonModal,
   noteModal,
   quickReplySelectRow,
-  questionnaireModal,
   redirectSelectRow,
   simpleTextModal,
   staffButtons,
@@ -36,7 +35,6 @@ const {
   claimTicket,
   closeTicket,
   createTicket,
-  questionnaireAnswersFromInteraction,
   quickReply,
   recordActivity,
   renameTicket,
@@ -233,13 +231,6 @@ async function handleTicketButton(interaction, ticket) {
 async function handleTicketModal(interaction) {
   const ticket = await findTicketByChannel(interaction.channelId);
 
-  if (interaction.customId.startsWith("ticket_questionnaire:")) {
-    const [, ticketCategoryId, categoryKey] = interaction.customId.split(":");
-    const answers = questionnaireAnswersFromInteraction(interaction, categoryKey);
-    await createTicket(client, interaction, ticketCategoryId, categoryKey, answers);
-    return;
-  }
-
   if (!ticket) {
     await replyEphemeral(interaction, { content: "Ce salon n'est pas un ticket connu." });
     return;
@@ -290,7 +281,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     if (interaction.isStringSelectMenu() && interaction.customId.startsWith("ticket_open:")) {
       const ticketCategoryId = interaction.customId.replace("ticket_open:", "");
-      await interaction.showModal(questionnaireModal(ticketCategoryId, interaction.values[0]));
+      await deferEphemeral(interaction);
+      await createTicket(client, interaction, ticketCategoryId, interaction.values[0]);
       return;
     }
 

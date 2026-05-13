@@ -299,38 +299,12 @@ function noteModal() {
     );
 }
 
-function questionnaireModal(ticketCategoryId, categoryKey) {
-  const category = config.categories[categoryKey];
-  const questions = category?.questions?.length
-    ? category.questions.slice(0, 5)
-    : [{ id: "request", label: "Explique ta demande" }];
-  const modal = new ModalBuilder()
-    .setCustomId(`ticket_questionnaire:${ticketCategoryId}:${categoryKey}`)
-    .setTitle(`Ticket ${category?.label ?? categoryKey}`);
-
-  for (const question of questions) {
-    modal.addComponents(
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId(question.id)
-          .setLabel(question.label)
-          .setStyle(question.style === "short" ? TextInputStyle.Short : TextInputStyle.Paragraph)
-          .setRequired(question.required !== false)
-          .setMaxLength(question.maxLength ?? 1000)
-      )
-    );
-  }
-
-  return modal;
-}
-
 module.exports = {
   closeReasonModal,
   noteModal,
   panelDefaults,
   panelEmbed,
   quickReplySelectRow,
-  questionnaireModal,
   redirectSelectRow,
   simpleTextModal,
   staffButtons,

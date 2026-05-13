@@ -66,23 +66,16 @@ async function sendTicketPanel(client, channel, ticketCategoryId, options) {
   });
 }
 
-function questionnaireAnswersFromInteraction(interaction, categoryKey) {
-  const category = config.categories[categoryKey];
-  const questions = category?.questions?.length
-    ? category.questions.slice(0, 5)
-    : [{ id: "request", label: "Demande" }];
-
-  return questions.map((question) => ({
-    id: question.id,
-    label: question.label,
-    value: interaction.fields.getTextInputValue(question.id)
-  }));
-}
-
 function answersText(answers) {
   if (!answers?.length) return null;
 
   return answers.map((answer) => `**${answer.label}**\n${answer.value}`).join("\n\n");
+}
+
+function rememberStaffAccess(ticket, userId) {
+  if (!userId) return;
+
+  ticket.staffAccessIds = [...new Set([...(ticket.staffAccessIds ?? []), userId])];
 }
 
 function isUnknownChannelError(error) {
@@ -165,7 +158,7 @@ async function createTicket(client, interaction, ticketCategoryId, categoryKey, 
     if (!existingChannel) {
       await markTicketClosed(existingTicket, "channel_deleted");
     } else {
-      await replyEphemeral(interaction, {
+      await finishEphemeral(interaction, {
         content: `Tu as deja un ticket ouvert : <#${existingTicket.channelId}>`
       });
       return;
@@ -174,7 +167,7 @@ async function createTicket(client, interaction, ticketCategoryId, categoryKey, 
 
   const refreshedExistingTickets = await findOpenTicketsByUser(interaction.user.id);
   if (refreshedExistingTickets.length >= maxOpenTickets) {
-    await replyEphemeral(interaction, {
+    await finishEphemeral(interaction, {
       content: `Tu as deja ${refreshedExistingTickets.length} ticket(s) ouvert(s). Limite: ${maxOpenTickets}.`
     });
     return;
@@ -204,7 +197,8 @@ async function createTicket(client, interaction, ticketCategoryId, categoryKey, 
     status: "open",
     createdAt: new Date().toISOString(),
     lastActivityAt: new Date().toISOString(),
-    answers
+    answers,
+    staffAccessIds: []
   });
 
   await channel.setTopic(`creator=${interaction.user.id}; type=${categoryKey}; staff=none; ticket=${ticket.id}`).catch(() => null);
@@ -226,7 +220,7 @@ async function createTicket(client, interaction, ticketCategoryId, categoryKey, 
     });
   }
 
-  await replyEphemeral(interaction, {
+  await finishEphemeral(interaction, {
     content: `Ton ticket a ete cree : <#${channel.id}>`
   });
 
@@ -247,13 +241,14 @@ async function changeTicketCategory(client, interaction, ticket, categoryKey) {
     return;
   }
 
+  rememberStaffAccess(ticket, interaction.user.id);
   ticket.category = categoryKey;
   await upsertTicket(ticket);
 
   await channel.setTopic(`creator=${ticket.userId}; type=${categoryKey}; staff=${ticket.claimedBy ?? "none"}; ticket=${ticket.id}`).catch(() => null);
   await channel.setParent(categoryParentId(category), { lockPermissions: false });
   await channel.permissionOverwrites.set(
-    categoryPermissionOverwrites(client, interaction.guild, categoryKey, ticket.userId, ticket.status === "closed")
+    categoryPermissionOverwrites(client, interaction.guild, categoryKey, ticket.userId, ticket.status === "closed", ticket.staffAccessIds)
   );
 
   await channel.send({
@@ -274,6 +269,7 @@ async function changeTicketCategory(client, interaction, ticket, categoryKey) {
 
 async function claimTicket(client, interaction, ticket) {
   ticket.claimedBy = interaction.user.id;
+  rememberStaffAccess(ticket, interaction.user.id);
   ticket.firstResponseAt = ticket.firstResponseAt ?? new Date().toISOString();
   await upsertTicket(ticket);
   await interaction.channel.setTopic(`creator=${ticket.userId}; type=${ticket.category}; staff=${ticket.claimedBy}; ticket=${ticket.id}`).catch(() => null);
@@ -301,7 +297,7 @@ async function closeTicket(client, interaction, ticket, reason = "Aucune raison 
 
   try {
     await channel.permissionOverwrites.set(
-      categoryPermissionOverwrites(client, interaction.guild, ticket.category, ticket.userId, true)
+      categoryPermissionOverwrites(client, interaction.guild, ticket.category, ticket.userId, true, ticket.staffAccessIds)
     );
     await channel.setName(`closed-${channel.name.replace(/^ticket-/, "")}`).catch((error) => {
       if (isUnknownChannelError(error)) throw error;
@@ -350,7 +346,7 @@ async function reopenTicket(client, interaction, ticket) {
   await upsertTicket(ticket);
 
   await interaction.channel.permissionOverwrites.set(
-    categoryPermissionOverwrites(client, interaction.guild, ticket.category, ticket.userId)
+    categoryPermissionOverwrites(client, interaction.guild, ticket.category, ticket.userId, false, ticket.staffAccessIds)
   );
   await interaction.channel.setName(`ticket-${interaction.channel.name.replace(/^closed-/, "")}`).catch(() => null);
 
@@ -381,7 +377,7 @@ async function archiveTicket(client, interaction, ticket) {
   await upsertTicket(ticket);
 
   await channel.permissionOverwrites.set(
-    categoryPermissionOverwrites(client, interaction.guild, ticket.category, ticket.userId, true)
+    categoryPermissionOverwrites(client, interaction.guild, ticket.category, ticket.userId, true, ticket.staffAccessIds)
   );
   await channel.setParent(targetArchiveCategoryId, { lockPermissions: false });
   await channel.setName(`archive-${channel.name.replace(/^closed-/, "").replace(/^ticket-/, "")}`).catch(() => null);
@@ -454,6 +450,7 @@ async function recordActivity(ticket, message) {
   ticket.lastActivityAt = new Date().toISOString();
   if (!message.author.bot && !ticket.claimedBy && message.author.id !== ticket.userId) {
     ticket.claimedBy = message.author.id;
+    rememberStaffAccess(ticket, message.author.id);
     ticket.firstResponseAt = ticket.firstResponseAt ?? new Date().toISOString();
     await message.channel.setTopic(`creator=${ticket.userId}; type=${ticket.category}; staff=${ticket.claimedBy}; ticket=${ticket.id}`).catch(() => null);
   }
@@ -467,7 +464,6 @@ module.exports = {
   claimTicket,
   closeTicket,
   createTicket,
-  questionnaireAnswersFromInteraction,
   quickReply,
   recordActivity,
   renameTicket,

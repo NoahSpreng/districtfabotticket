@@ -9,16 +9,26 @@ const {
 } = require("./utils");
 const { replyEphemeral } = require("./responses");
 
-function categoryPermissionOverwrites(client, guild, categoryKey, userId, closed = false) {
+function categoryPermissionOverwrites(client, guild, categoryKey, userId, closed = false, staffUserIds = []) {
   const category = config.categories[categoryKey] ?? config.categories[config.defaultCategory];
   const allowedRoles = new Set(category.roleIds);
   const userPermissions = [
     PermissionsBitField.Flags.ViewChannel,
     PermissionsBitField.Flags.ReadMessageHistory
   ];
+  const staffPermissions = [
+    PermissionsBitField.Flags.ViewChannel,
+    PermissionsBitField.Flags.ReadMessageHistory,
+    PermissionsBitField.Flags.ManageMessages
+  ];
 
   if (!closed) {
     userPermissions.push(
+      PermissionsBitField.Flags.SendMessages,
+      PermissionsBitField.Flags.AttachFiles,
+      PermissionsBitField.Flags.EmbedLinks
+    );
+    staffPermissions.push(
       PermissionsBitField.Flags.SendMessages,
       PermissionsBitField.Flags.AttachFiles,
       PermissionsBitField.Flags.EmbedLinks
@@ -52,6 +62,10 @@ function categoryPermissionOverwrites(client, guild, categoryKey, userId, closed
         PermissionsBitField.Flags.ReadMessageHistory,
         PermissionsBitField.Flags.ManageMessages
       ]
+    })),
+    ...Array.from(new Set(staffUserIds.filter((id) => id && id !== userId))).map((staffUserId) => ({
+      id: staffUserId,
+      allow: staffPermissions
     }))
   ];
 }
@@ -92,10 +106,12 @@ async function validateTicketConfig(guild, ticketCategoryId, categoryKey) {
 }
 
 function isTicketStaff(member, ticket) {
-  const category = config.categories[ticket.category];
-  if (!category || !member?.roles?.cache) return false;
+  if (!member?.roles?.cache) return false;
+  if (ticket.staffAccessIds?.includes(member.id)) return true;
 
-  return category.roleIds.some((roleId) => member.roles.cache.has(roleId));
+  return Object.values(config.categories).some((category) => {
+    return category.roleIds?.some((roleId) => member.roles.cache.has(roleId));
+  });
 }
 
 async function requireTicketStaff(interaction, ticket) {
