@@ -72,23 +72,54 @@ function answersText(answers) {
   return answers.map((answer) => `**${answer.label}**\n${answer.value}`).join("\n\n");
 }
 
+function ticketDebug(ticket) {
+  return {
+    id: ticket.id,
+    number: ticket.number,
+    userId: ticket.userId,
+    channelId: ticket.channelId,
+    category: ticket.category,
+    status: ticket.status,
+    claimedBy: ticket.claimedBy ?? null,
+    staffAccessIds: ticket.staffAccessIds ?? [],
+    staffRoleAccessIds: ticket.staffRoleAccessIds ?? []
+  };
+}
+
+function redirectLog(step, details = {}) {
+  console.log(`[ticket:redirect:${step}]`, details);
+}
+
 function rememberStaffAccess(ticket, userId) {
   if (!userId) return;
 
   ticket.staffAccessIds = [...new Set([...(ticket.staffAccessIds ?? []), userId])];
+  redirectLog("remember-staff-user", {
+    ticketId: ticket.id,
+    userId,
+    staffAccessIds: ticket.staffAccessIds
+  });
 }
 
 function rememberCategoryRoles(ticket, categoryKey) {
   const roleIds = config.categories[categoryKey]?.roleIds ?? [];
   ticket.staffRoleAccessIds = [...new Set([...(ticket.staffRoleAccessIds ?? []), ...roleIds])];
+  redirectLog("remember-category-roles", {
+    ticketId: ticket.id,
+    categoryKey,
+    addedRoleIds: roleIds,
+    staffRoleAccessIds: ticket.staffRoleAccessIds
+  });
 }
 
 function isUnknownChannelError(error) {
-  return error?.code === 10003 || error?.rawError?.code === 10003;
+  const code = error?.code ?? error?.rawError?.code;
+  return String(code) === "10003";
 }
 
 function isUnknownInteractionError(error) {
-  return error?.code === 10062 || error?.rawError?.code === 10062;
+  const code = error?.code ?? error?.rawError?.code;
+  return String(code) === "10062";
 }
 
 function archiveCategoryId() {
@@ -108,6 +139,8 @@ async function ensureInteractionDeferred(interaction) {
 }
 
 async function fetchTicketChannel(interaction, ticket) {
+  if (!interaction.guild) return null;
+
   const channel = await interaction.guild.channels.fetch(ticket.channelId).catch((error) => {
     if (isUnknownChannelError(error)) return null;
     throw error;
@@ -234,18 +267,43 @@ async function createTicket(client, interaction, ticketCategoryId, categoryKey, 
 }
 
 async function changeTicketCategory(client, interaction, ticket, categoryKey) {
+  redirectLog("start", {
+    selectedCategory: categoryKey,
+    userId: interaction.user.id,
+    channelId: interaction.channelId,
+    ticket: ticketDebug(ticket)
+  });
+
   const category = config.categories[categoryKey];
   if (!category) {
+    redirectLog("category-missing", {
+      selectedCategory: categoryKey,
+      availableCategories: Object.keys(config.categories)
+    });
     await finishEphemeral(interaction, { content: "Categorie introuvable." });
     return;
   }
 
   await validateTicketConfig(interaction.guild, config.ticketCategoryId, categoryKey);
+  redirectLog("config-valid", {
+    selectedCategory: categoryKey,
+    targetCategoryId: categoryParentId(category)
+  });
+
   const channel = await fetchTicketChannel(interaction, ticket);
   if (!channel) {
+    redirectLog("channel-missing", {
+      ticket: ticketDebug(ticket)
+    });
     await finishEphemeral(interaction, { content: "Salon du ticket introuvable. Lance /ticket-clean pour nettoyer les tickets fantomes." });
     return;
   }
+
+  redirectLog("channel-fetched", {
+    channelId: channel.id,
+    channelName: channel.name,
+    parentId: channel.parentId
+  });
 
   const previousCategoryKey = ticket.category;
   rememberStaffAccess(ticket, interaction.user.id);
@@ -253,26 +311,60 @@ async function changeTicketCategory(client, interaction, ticket, categoryKey) {
   rememberCategoryRoles(ticket, categoryKey);
 
   try {
-    await channel.setTopic(`creator=${ticket.userId}; type=${categoryKey}; staff=${ticket.claimedBy ?? "none"}; ticket=${ticket.id}`).catch(() => null);
-    await channel.setParent(categoryParentId(category), { lockPermissions: false });
-    await channel.permissionOverwrites.set(
-      categoryPermissionOverwrites(
-        client,
-        interaction.guild,
-        categoryKey,
-        ticket.userId,
-        ticket.status === "closed",
-        ticket.staffAccessIds,
-        ticket.staffRoleAccessIds
-      )
+    const targetParentId = categoryParentId(category);
+    const overwrites = categoryPermissionOverwrites(
+      client,
+      interaction.guild,
+      categoryKey,
+      ticket.userId,
+      ticket.status === "closed",
+      ticket.staffAccessIds,
+      ticket.staffRoleAccessIds
     );
+
+    redirectLog("apply-topic", {
+      channelId: channel.id,
+      from: previousCategoryKey,
+      to: categoryKey
+    });
+    await channel.setTopic(`creator=${ticket.userId}; type=${categoryKey}; staff=${ticket.claimedBy ?? "none"}; ticket=${ticket.id}`).catch((error) => {
+      redirectLog("topic-warning", {
+        message: error.message,
+        code: error.code
+      });
+      return null;
+    });
+
+    redirectLog("apply-parent", {
+      channelId: channel.id,
+      fromParentId: channel.parentId,
+      targetParentId
+    });
+    await channel.setParent(targetParentId, { lockPermissions: false });
+
+    redirectLog("apply-permissions", {
+      channelId: channel.id,
+      overwriteIds: overwrites.map((overwrite) => overwrite.id),
+      overwriteCount: overwrites.length,
+      staffAccessIds: ticket.staffAccessIds ?? [],
+      staffRoleAccessIds: ticket.staffRoleAccessIds ?? []
+    });
+    await channel.permissionOverwrites.set(overwrites);
+    redirectLog("permissions-applied", {
+      channelId: channel.id,
+      targetParentId
+    });
   } catch (error) {
     console.error("Erreur redirection ticket:", {
       ticketId: ticket.id,
       channelId: ticket.channelId,
       from: previousCategoryKey,
       to: categoryKey,
-      error
+      errorName: error.name,
+      errorMessage: error.message,
+      errorCode: error.code,
+      errorStatus: error.status,
+      stack: error.stack
     });
     await finishEphemeral(interaction, {
       content: `Impossible de rediriger vers **${category.label}**: ${error.message}`
@@ -282,9 +374,16 @@ async function changeTicketCategory(client, interaction, ticket, categoryKey) {
 
   ticket.category = categoryKey;
   await upsertTicket(ticket);
+  redirectLog("store-updated", {
+    ticket: ticketDebug(ticket)
+  });
 
   await finishEphemeral(interaction, {
     content: `Ticket redirige vers **${category.label}**.`
+  });
+  redirectLog("interaction-finished", {
+    ticketId: ticket.id,
+    categoryKey
   });
 
   await channel.send({
@@ -293,10 +392,26 @@ async function changeTicketCategory(client, interaction, ticket, categoryKey) {
     allowedMentions: {
       roles: [...new Set(category.roleIds)]
     }
+  }).then(() => {
+    redirectLog("channel-message-sent", {
+      channelId: channel.id,
+      categoryKey
+    });
+  }).catch((error) => {
+    redirectLog("channel-message-warning", {
+      message: error.message,
+      code: error.code,
+      status: error.status
+    });
   });
 
   await sendLog(client, ticketEmbed("Ticket redirige", `Ticket #${formatTicketNumber(ticket)} redirige vers **${category.label}** par <@${interaction.user.id}>.`, 0x9b51e0));
   await notifyTicketUser(client, ticket, `Ton ticket #${formatTicketNumber(ticket)} a ete redirige vers ${category.label}.`);
+  redirectLog("done", {
+    ticketId: ticket.id,
+    from: previousCategoryKey,
+    to: categoryKey
+  });
 }
 
 async function claimTicket(client, interaction, ticket) {
@@ -342,7 +457,15 @@ async function closeTicket(client, interaction, ticket, reason = "Aucune raison 
     return;
   }
 
-  const transcriptHtml = await createTranscriptHtml(channel, ticket);
+  let transcriptHtml;
+  try {
+    transcriptHtml = await createTranscriptHtml(channel, ticket);
+  } catch (error) {
+    if (!isUnknownChannelError(error)) throw error;
+    await finishClosedWithoutChannel(client, interaction, ticket, reason);
+    return;
+  }
+
   const savedTranscriptPath = await saveTranscriptHtml(transcriptHtml, ticket).catch(() => null);
   const transcript = createTranscriptAttachmentFromHtml(transcriptHtml, ticket);
   const logTranscript = createTranscriptAttachmentFromHtml(transcriptHtml, ticket);
@@ -353,14 +476,29 @@ async function closeTicket(client, interaction, ticket, reason = "Aucune raison 
     files: [transcript]
   };
 
+  let closedChannelLostDuringReply = false;
+
   await respondPublic(interaction, closePayload).catch(async (error) => {
     if (!isUnknownInteractionError(error)) throw error;
+
     await channel.send({
       embeds: closePayload.embeds,
       components: closePayload.components,
       files: [createTranscriptAttachmentFromHtml(transcriptHtml, ticket)]
+    }).catch((channelError) => {
+      if (isUnknownChannelError(channelError)) {
+        closedChannelLostDuringReply = true;
+        return null;
+      }
+      throw channelError;
     });
   });
+
+  if (closedChannelLostDuringReply) {
+    await finishClosedWithoutChannel(client, interaction, ticket, reason);
+    return;
+  }
+
   await sendLogMessage(client, {
     embeds: [ticketEmbed("Ticket ferme", [
       `Ticket de <@${ticket.userId}> ferme par <@${interaction.user.id}>.`,
@@ -373,15 +511,27 @@ async function closeTicket(client, interaction, ticket, reason = "Aucune raison 
 }
 
 async function reopenTicket(client, interaction, ticket) {
+  const channel = await fetchTicketChannel(interaction, ticket);
+  if (!channel) {
+    await finishEphemeral(interaction, { content: "Salon du ticket introuvable. Impossible de le reouvrir." });
+    return;
+  }
+
   ticket.status = "open";
   ticket.reopenedBy = interaction.user.id;
   ticket.reopenedAt = new Date().toISOString();
   await upsertTicket(ticket);
 
-  await interaction.channel.permissionOverwrites.set(
-    categoryPermissionOverwrites(client, interaction.guild, ticket.category, ticket.userId, false, ticket.staffAccessIds, ticket.staffRoleAccessIds)
-  );
-  await interaction.channel.setName(`ticket-${interaction.channel.name.replace(/^closed-/, "")}`).catch(() => null);
+  try {
+    await channel.permissionOverwrites.set(
+      categoryPermissionOverwrites(client, interaction.guild, ticket.category, ticket.userId, false, ticket.staffAccessIds, ticket.staffRoleAccessIds)
+    );
+    await channel.setName(`ticket-${channel.name.replace(/^closed-/, "")}`).catch(() => null);
+  } catch (error) {
+    if (!isUnknownChannelError(error)) throw error;
+    await finishEphemeral(interaction, { content: "Le salon du ticket a ete supprime pendant la reouverture." });
+    return;
+  }
 
   await interaction.reply({
     embeds: [ticketEmbed("Ticket reouvert", `<@${interaction.user.id}> a reouvert ce ticket.`, 0x36b37e)],
@@ -409,11 +559,17 @@ async function archiveTicket(client, interaction, ticket) {
   ticket.archivedAt = new Date().toISOString();
   await upsertTicket(ticket);
 
-  await channel.permissionOverwrites.set(
-    categoryPermissionOverwrites(client, interaction.guild, ticket.category, ticket.userId, true, ticket.staffAccessIds, ticket.staffRoleAccessIds)
-  );
-  await channel.setParent(targetArchiveCategoryId, { lockPermissions: false });
-  await channel.setName(`archive-${channel.name.replace(/^closed-/, "").replace(/^ticket-/, "")}`).catch(() => null);
+  try {
+    await channel.permissionOverwrites.set(
+      categoryPermissionOverwrites(client, interaction.guild, ticket.category, ticket.userId, true, ticket.staffAccessIds, ticket.staffRoleAccessIds)
+    );
+    await channel.setParent(targetArchiveCategoryId, { lockPermissions: false });
+    await channel.setName(`archive-${channel.name.replace(/^closed-/, "").replace(/^ticket-/, "")}`).catch(() => null);
+  } catch (error) {
+    if (!isUnknownChannelError(error)) throw error;
+    await finishEphemeral(interaction, { content: "Le salon du ticket a ete supprime pendant l'archivage." });
+    return;
+  }
 
   await finishEphemeral(interaction, {
     embeds: [ticketEmbed("Ticket archive", `<@${interaction.user.id}> a archive ce ticket.`, 0x95a5a6)]

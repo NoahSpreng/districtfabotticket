@@ -9,6 +9,10 @@ const {
 } = require("./utils");
 const { replyEphemeral } = require("./responses");
 
+function roleIds(member) {
+  return member?.roles?.cache ? [...member.roles.cache.keys()] : [];
+}
+
 function categoryPermissionOverwrites(client, guild, categoryKey, userId, closed = false, staffUserIds = [], staffRoleIds = []) {
   const category = config.categories[categoryKey] ?? config.categories[config.defaultCategory];
   const allowedRoles = new Set([...(category.roleIds ?? []), ...staffRoleIds]);
@@ -106,16 +110,61 @@ async function validateTicketConfig(guild, ticketCategoryId, categoryKey) {
 }
 
 function isTicketStaff(member, ticket) {
-  if (!member?.roles?.cache) return false;
-  if (ticket.staffAccessIds?.includes(member.id)) return true;
+  if (!member?.roles?.cache) {
+    console.log("[ticket:staff-check]", {
+      result: "no_member_roles",
+      userId: member?.id,
+      ticketId: ticket.id,
+      ticketCategory: ticket.category
+    });
+    return false;
+  }
 
-  return Object.values(config.categories).some((category) => {
-    return category.roleIds?.some((roleId) => member.roles.cache.has(roleId));
+  if (ticket.staffAccessIds?.includes(member.id)) {
+    console.log("[ticket:staff-check]", {
+      result: "allowed_by_user_access",
+      userId: member.id,
+      ticketId: ticket.id,
+      ticketCategory: ticket.category,
+      staffAccessIds: ticket.staffAccessIds ?? []
+    });
+    return true;
+  }
+
+  const matchedRoles = [];
+  for (const [categoryKey, category] of Object.entries(config.categories)) {
+    for (const roleId of category.roleIds ?? []) {
+      if (member.roles.cache.has(roleId)) {
+        matchedRoles.push({ categoryKey, roleId });
+      }
+    }
+  }
+
+  const allowed = matchedRoles.length > 0;
+  console.log("[ticket:staff-check]", {
+    result: allowed ? "allowed_by_role" : "denied",
+    userId: member.id,
+    ticketId: ticket.id,
+    ticketCategory: ticket.category,
+    memberRoleIds: roleIds(member),
+    matchedRoles,
+    staffAccessIds: ticket.staffAccessIds ?? [],
+    staffRoleAccessIds: ticket.staffRoleAccessIds ?? []
   });
+
+  return allowed;
 }
 
 async function requireTicketStaff(interaction, ticket) {
   if (isTicketStaff(interaction.member, ticket)) return true;
+
+  console.log("[ticket:staff-denied]", {
+    userId: interaction.user.id,
+    channelId: interaction.channelId,
+    ticketId: ticket.id,
+    ticketCategory: ticket.category,
+    customId: interaction.customId
+  });
 
   await replyEphemeral(interaction, {
     content: "Cette action est reservee au staff de ce ticket."

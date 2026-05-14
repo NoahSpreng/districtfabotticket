@@ -18,9 +18,12 @@ async function fetchAllMessages(channel) {
 
   const messages = [];
   let before;
+  const manager = channel.messages;
 
   while (true) {
-    const batch = await channel.messages.fetch({ limit: 100, before }).catch(() => null);
+    if (!manager?.fetch) break;
+
+    const batch = await manager.fetch({ limit: 100, before }).catch(() => null);
     if (!batch?.size) break;
 
     messages.push(...batch.values());

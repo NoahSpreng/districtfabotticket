@@ -73,11 +73,16 @@ function panelEmbed(client, options = {}) {
 function categoryOptions(prefix = "") {
   return Object.entries(config.categories)
     .filter(([, category]) => prefix || !category.staffOnly)
-    .map(([value, category]) => ({
-      label: category.label,
-      value: `${prefix}${value}`,
-      description: category.description
-    }));
+    .map(([value, category]) => {
+      const option = {
+        label: category.label,
+        value: `${prefix}${value}`,
+        description: category.description
+      };
+
+      if (category.emoji) option.emoji = category.emoji;
+      return option;
+    });
 }
 
 function ticketPanelRow(ticketCategoryId, placeholder = panelDefaults().selectPlaceholder) {
@@ -94,12 +99,14 @@ function statusButton(ticket) {
     return new ButtonBuilder()
       .setCustomId("ticket_close")
       .setLabel("Fermer")
+      .setEmoji("🔒")
       .setStyle(ButtonStyle.Danger);
   }
 
   return new ButtonBuilder()
     .setCustomId("ticket_reopen")
     .setLabel("Reouvrir")
+    .setEmoji("🔓")
     .setStyle(ButtonStyle.Success);
 }
 
@@ -109,11 +116,13 @@ function staffButtons(ticket) {
       new ButtonBuilder()
         .setCustomId("ticket_claim")
         .setLabel("Prendre")
+        .setEmoji("✅")
         .setStyle(ButtonStyle.Success),
       statusButton(ticket),
       new ButtonBuilder()
         .setCustomId("ticket_archive")
         .setLabel("Archiver")
+        .setEmoji("📦")
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(ticket.status === "archived")
     ),
@@ -121,24 +130,29 @@ function staffButtons(ticket) {
       new ButtonBuilder()
         .setCustomId("ticket_redirect")
         .setLabel("Rediriger")
+        .setEmoji("🔁")
         .setStyle(ButtonStyle.Primary),
       new ButtonBuilder()
         .setCustomId("ticket_rename")
         .setLabel("Renommer")
+        .setEmoji("✏️")
         .setStyle(ButtonStyle.Secondary)
     ),
     new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId("ticket_quick_menu")
         .setLabel("Reponses rapides")
+        .setEmoji("💬")
         .setStyle(ButtonStyle.Primary),
       new ButtonBuilder()
         .setCustomId("ticket_note")
         .setLabel("Ajouter note")
+        .setEmoji("📝")
         .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId("ticket_notes_view")
         .setLabel("Voir notes")
+        .setEmoji("👀")
         .setStyle(ButtonStyle.Secondary)
     )
   ];
@@ -150,6 +164,7 @@ function ticketMemberButtons(ticket) {
     new ButtonBuilder()
       .setCustomId("ticket_staff_panel")
       .setLabel("Panel staff")
+      .setEmoji("🛠️")
       .setStyle(ButtonStyle.Secondary)
   );
 }
@@ -211,27 +226,32 @@ function quickReplySelectRow() {
         {
           label: "Bonjour",
           value: "hello",
-          description: "Message de prise en charge"
+          description: "Message de prise en charge",
+          emoji: "👋"
         },
         {
           label: "Patiente",
           value: "wait",
-          description: "Demander au membre de patienter"
+          description: "Demander au membre de patienter",
+          emoji: "⏳"
         },
         {
           label: "Besoin d'infos",
           value: "infos",
-          description: "Demander des informations supplementaires"
+          description: "Demander des informations supplementaires",
+          emoji: "📌"
         },
         {
           label: "Preuves",
           value: "proof",
-          description: "Demander des preuves ou captures"
+          description: "Demander des preuves ou captures",
+          emoji: "🧾"
         },
         {
           label: "Termine",
           value: "done",
-          description: "Prevenir que le dossier est traite"
+          description: "Prevenir que le dossier est traite",
+          emoji: "✅"
         }
       ])
   );

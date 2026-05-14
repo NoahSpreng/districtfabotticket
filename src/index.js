@@ -56,6 +56,19 @@ const client = new Client({
   ]
 });
 
+function interactionDebug(interaction, extra = {}) {
+  return {
+    customId: interaction.customId,
+    type: interaction.type,
+    userId: interaction.user?.id,
+    channelId: interaction.channelId,
+    guildId: interaction.guildId,
+    deferred: interaction.deferred,
+    replied: interaction.replied,
+    ...extra
+  };
+}
+
 client.once(Events.ClientReady, async (readyClient) => {
   readyClient.user.setPresence({
     activities: [{ name: config.status, type: ActivityType.Playing }],
@@ -162,11 +175,19 @@ async function handleTicketButton(interaction, ticket) {
   }
 
   if (interaction.customId === "ticket_redirect") {
+    console.log("[ticket:redirect:button]", interactionDebug(interaction, {
+      ticketId: ticket.id,
+      ticketCategory: ticket.category,
+      ticketStatus: ticket.status
+    }));
     if (!(await requireTicketStaff(interaction, ticket))) return;
     await replyEphemeral(interaction, {
       content: "Choisis la nouvelle categorie du ticket.",
       components: [redirectSelectRow()]
     });
+    console.log("[ticket:redirect:menu-sent]", interactionDebug(interaction, {
+      ticketId: ticket.id
+    }));
     return;
   }
 
@@ -299,8 +320,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     if (interaction.isStringSelectMenu() && interaction.customId === "ticket_redirect_select") {
+      console.log("[ticket:redirect:select-received]", interactionDebug(interaction, {
+        values: interaction.values
+      }));
+
       const ticket = await findTicketByChannel(interaction.channelId);
       if (!ticket) {
+        console.log("[ticket:redirect:select-no-ticket]", interactionDebug(interaction));
         await replyEphemeral(interaction, { content: "Ce salon n'est pas un ticket connu." });
         return;
       }
@@ -308,11 +334,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (!(await requireTicketStaff(interaction, ticket))) return;
       const categoryKey = interaction.values[0].replace("redirect:", "");
       const categoryLabel = config.categories[categoryKey]?.label ?? categoryKey;
+      console.log("[ticket:redirect:select-authorized]", interactionDebug(interaction, {
+        ticketId: ticket.id,
+        from: ticket.category,
+        to: categoryKey,
+        categoryLabel
+      }));
+
       await interaction.deferUpdate();
+      console.log("[ticket:redirect:select-deferred]", interactionDebug(interaction, {
+        ticketId: ticket.id,
+        to: categoryKey
+      }));
+
       await interaction.editReply({
         content: `Redirection vers **${categoryLabel}** en cours...`,
         components: []
       });
+      console.log("[ticket:redirect:select-message-updated]", interactionDebug(interaction, {
+        ticketId: ticket.id,
+        to: categoryKey
+      }));
+
       await changeTicketCategory(client, interaction, ticket, categoryKey);
       return;
     }
